@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bacteriocin Lab: Word Detective Case Files</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Poppins:wght@400;600;700&display=swap');
+
+:root{
+  --navy:#161A3A; --navy2:#20265C;
+  --neon-yellow:#F9E44C; --neon-pink:#FF5C8A; --neon-teal:#3FE0C5;
+  --neon-purple:#B98CFF; --neon-orange:#FFA34C;
+  --paper:#FDF8EC;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;font-family:'Poppins',sans-serif;color:var(--paper);
+  background:radial-gradient(circle at 20% 10%, var(--navy2), var(--navy) 65%);
+  overflow-x:hidden;
+}
+.app{min-height:100vh;display:flex;flex-direction:column;padding:24px 18px 90px;align-items:center;}
+h1,h2,h3{font-family:'Fredoka',sans-serif;font-weight:700;margin:0;}
+
+.star-counter{
+  position:fixed;top:14px;right:16px;z-index:50;
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
+  padding:7px 16px;border-radius:20px;font-family:'Fredoka',sans-serif;
+  font-weight:700;color:var(--neon-yellow);font-size:15px;
+}
+.star-counter.pop{animation:starPop .4s ease;}
+@keyframes starPop{0%{transform:scale(1);}50%{transform:scale(1.35);}100%{transform:scale(1);}}
+
+/* PROGRESS DOTS */
+.progress-row{display:flex;gap:10px;margin-bottom:18px;}
+.dot{
+  width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.08);
+  border:2px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;
+  font-family:'Fredoka',sans-serif;font-weight:700;font-size:14px;color:#8A90CB;
+}
+.dot.active{border-color:var(--neon-yellow); color:var(--neon-yellow); background:rgba(249,228,76,0.12);}
+.dot.done{border-color:var(--neon-teal); background:var(--neon-teal); color:var(--navy);}
+
+.stage{display:none;flex-direction:column;align-items:center;width:100%;max-width:760px;animation:fadeIn .4s ease;}
+.stage.active{display:flex;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+.eyebrow{
+  font-family:'Fredoka',sans-serif;font-size:13px;letter-spacing:1.5px;
+  background:var(--neon-yellow);color:var(--navy);padding:4px 14px;border-radius:20px;
+  margin-bottom:10px;display:inline-block;transform:rotate(-2deg);
+}
+.stage h2{font-size:clamp(22px,4.5vw,30px);margin-bottom:6px;text-align:center;}
+.stage .lead{color:#B9BEE8;font-size:14px;max-width:520px;margin-bottom:18px;text-align:center;}
+
+.board{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;margin-bottom:16px;}
+.col-title{font-family:'Fredoka',sans-serif;font-size:12px;color:#7F86C9;text-align:center;margin-bottom:6px;grid-column:span 1;}
+.chip{
+  background:rgba(255,255,255,0.08);border:2px solid transparent;border-radius:14px;
+  padding:14px 12px;cursor:pointer;font-size:13px;line-height:1.35;text-align:center;
+  min-height:64px;display:flex;align-items:center;justify-content:center;
+  transition:transform .12s, border-color .15s, background .15s;
+}
+.chip.term{font-family:'Fredoka',sans-serif;font-weight:700;font-size:15px;background:rgba(255,255,255,0.1);}
+.chip:hover:not(.matched):not(.disabled){transform:scale(1.03); border-color:var(--neon-teal);}
+.chip.selected{border-color:var(--neon-yellow); background:rgba(249,228,76,0.18);}
+.chip.matched{background:rgba(63,224,197,0.18); border-color:var(--neon-teal); cursor:default; opacity:0.55;}
+.chip.wrong{animation:shakeErr .4s ease; border-color:var(--neon-pink); background:rgba(255,92,138,0.2);}
+@keyframes shakeErr{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+
+.speak-box{
+  width:100%;background:var(--paper);color:var(--navy);border-radius:16px;padding:16px 18px;
+  margin-top:6px;min-height:50px;display:flex;align-items:center;gap:10px;
+  opacity:0;transform:translateY(6px);transition:all .3s ease;
+}
+.speak-box.show{opacity:1;transform:translateY(0);}
+.speak-box .say-icon{font-size:26px;}
+.speak-box .say-text{font-size:14px;font-style:italic;flex:1;}
+.speak-btn{
+  background:var(--neon-teal);border:none;border-radius:50%;width:36px;height:36px;
+  font-size:16px;cursor:pointer;flex:0 0 auto;
+}
+
+.case-status{
+  font-family:'Fredoka',sans-serif;font-size:14px;color:#8A90CB;margin-top:10px;
+}
+.next-case-btn{
+  margin-top:16px;background:var(--neon-teal);color:var(--navy);border:none;
+  font-family:'Fredoka',sans-serif;font-weight:700;font-size:15px;padding:12px 28px;border-radius:16px;cursor:pointer;
+  opacity:0.3; pointer-events:none; transition:opacity .3s;
+}
+.next-case-btn.ready{opacity:1; pointer-events:auto;}
+
+/* FINAL */
+.trophy{font-size:64px;}
+.final-stars{font-family:'Fredoka',sans-serif;font-size:26px;color:var(--neon-yellow);margin:10px 0;}
+#confettiLayer{position:fixed;inset:0;pointer-events:none;z-index:999;overflow:hidden;}
+.confetti-piece{position:absolute;top:-40px;animation:confettiFall linear forwards;}
+@keyframes confettiFall{to{transform:translateY(115vh) rotate(360deg);opacity:0;}}
+
+.nav-hint{font-size:12px;color:#6C72AA;margin-top:26px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="star-counter" id="starCounter">⭐ 0</div>
+<div id="confettiLayer"></div>
+<div class="app">
+
+  <div class="progress-row" id="progressRow"></div>
+
+  <!-- Intro -->
+  <div class="stage active" id="stage-intro">
+    <div class="eyebrow">🕵️ CASE FILES</div>
+    <h2>Word Detective: 5 Case Files</h2>
+    <p class="lead">Five stations, twenty science words. Match each term to its meaning, say the example out loud, and close every case to solve the full mystery of our bacteriocin project!</p>
+    <button class="next-case-btn ready" onclick="startGame()">🔍 Open Case File 1</button>
+  </div>
+
+  <!-- Stations will be injected here -->
+  <div id="stationsContainer"></div>
+
+  <!-- Final -->
+  <div class="stage" id="stage-final">
+    <div class="trophy">🏆</div>
+    <h2>All Cases Closed, Detective!</h2>
+    <div class="final-stars" id="finalStars">⭐ 0 stars</div>
+    <p class="lead">You now know all 20 project words. Time to explain your project to the world! 🌍</p>
+  </div>
+
+  <div class="nav-hint" id="navHint"></div>
+</div>
+
+<script>
+/* ============ DATA: 5 stations, matching game_pairs (short defs) + speak examples ============ */
+const stations = [
+  {
+    title: "Case File 1 — The Basics", icon:"🧀",
+    lead: "Match each word to its meaning. This is where our whole detective story begins: the cheese and its bacteria.",
+    pairs: [
+      {term:"BACTERIOCIN", def:"A natural protein bacteria make to kill other cells.", say:"Our bacteriocins killed almost all of the cancer cells within 48 hours."},
+      {term:"LACTIC ACID BACTERIA", def:"'Good' bacteria that turn milk sugar into lactic acid.", say:"We isolated two types of lactic acid bacteria from our cheese."},
+      {term:"LACTOBACILLUS", def:"A rod-shaped genus of lactic acid bacteria.", say:"Lactobacillus sp. produced Bacteriocin 1 in our experiment."},
+      {term:"LACTOCOCCUS", def:"A round-shaped genus of lactic acid bacteria.", say:"We obtained Bacteriocin 2 from our Lactococcus sample."},
+      {term:"GEOGRAPHICAL INDICATION", def:"An official label proving a food is unique to one region.", say:"Our cheese has a geographical indication certificate from Turkey."},
+    ]
+  },
+  {
+    title: "Case File 2 — Lab Identification", icon:"🔬",
+    lead: "How do you prove your bacteria are really lactic acid bacteria? Match the tests to their meanings.",
+    pairs: [
+      {term:"GRAM STAINING", def:"A color test showing a bacteria's cell wall type.", say:"Gram staining showed that our bacteria were Gram-positive."},
+      {term:"CATALASE TEST", def:"A test where bubbles show a certain enzyme is present.", say:"Our bacteria didn't bubble, so they were catalase-negative."},
+      {term:"OXIDASE TEST", def:"A test where a color-change strip shows an enzyme is present.", say:"The oxidase strip didn't change color, so our bacteria were oxidase-negative."},
+    ]
+  },
+  {
+    title: "Case File 3 — Production & Purification", icon:"🧪",
+    lead: "Now the bacteria have to actually make the bacteriocin — and we have to clean it up.",
+    pairs: [
+      {term:"GROWTH MEDIUM", def:"The special liquid 'food' that lets bacteria grow.", say:"We grew our bacteria in a liquid growth medium for 48 hours."},
+      {term:"PURIFICATION", def:"Making a substance cleaner and more concentrated.", say:"Ultrafiltration made our bacteriocin more concentrated and pure."},
+      {term:"DISK DIFFUSION TEST", def:"A test where a clear zone shows a substance stops bacteria.", say:"Our disk diffusion test showed clear zones, proving our bacteriocins were antimicrobial."},
+    ]
+  },
+  {
+    title: "Case File 4 — Testing on Cancer Cells", icon:"🧫",
+    lead: "This is the big moment: does the bacteriocin actually fight cancer cells?",
+    pairs: [
+      {term:"CYTOTOXICITY", def:"How harmful a substance is to living cells.", say:"We tested the cytotoxicity of our bacteriocins on lung and breast cancer cells."},
+      {term:"MTT ASSAY", def:"A test where purple color shows how many cells are alive.", say:"The MTT test showed very little purple color in our bacteriocin groups."},
+      {term:"NEGATIVE CONTROL", def:"The group in an experiment that gets no treatment at all.", say:"In the negative control, the cancer cells stayed alive and kept growing."},
+      {term:"NISIN", def:"A commercial bacteriocin used for comparison.", say:"Our bacteriocins were about twice as effective as nisin."},
+    ]
+  },
+  {
+    title: "Case File 5 — Advanced Results", icon:"✨",
+    lead: "The final proof: how do we know the cancer cells are really dying?",
+    pairs: [
+      {term:"IMMUNOFLUORESCENCE", def:"A technique that makes marker proteins glow under a microscope.", say:"Immunofluorescence let us see the PCNA and Caspase-3 proteins glowing."},
+      {term:"PCNA", def:"A marker protein showing whether a cell is still growing.", say:"In our negative control, PCNA glowed brightly in the nucleus."},
+      {term:"CASPASE-3", def:"A marker protein showing that a cell is dying.", say:"We saw strong Caspase-3 fluorescence in the bacteriocin-treated cells."},
+      {term:"APOPTOSIS", def:"A controlled, 'programmed' death of a cell.", say:"Caspase-3 activation showed that the cancer cells were going through apoptosis."},
+      {term:"SDS-PAGE", def:"A technique that separates proteins by size to find their weight.", say:"SDS-PAGE showed that our bacteriocins were about 11 kilodaltons."},
+    ]
+  },
+];
+
+/* ============ STAR COUNTER ============ */
+let totalStars = 0;
+const starCounterEl = document.getElementById('starCounter');
+function awardStars(n){
+  totalStars += n;
+  starCounterEl.textContent = `⭐ ${totalStars}`;
+  starCounterEl.classList.remove('pop'); void starCounterEl.offsetWidth; starCounterEl.classList.add('pop');
+}
+
+/* ============ SPEECH ============ */
+function speak(text){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang='en-US'; u.rate=0.85;
+  window.speechSynthesis.speak(u);
+}
+
+/* ============ PROGRESS DOTS ============ */
+const progressRow = document.getElementById('progressRow');
+stations.forEach((s,i)=>{
+  const d = document.createElement('div');
+  d.className = 'dot';
+  d.id = 'dot-'+i;
+  d.textContent = i+1;
+  progressRow.appendChild(d);
+});
+function updateDots(currentStationIdx, completedSet){
+  stations.forEach((s,i)=>{
+    const d = document.getElementById('dot-'+i);
+    d.classList.remove('active','done');
+    if(completedSet.has(i)) d.classList.add('done');
+    else if(i===currentStationIdx) d.classList.add('active');
+  });
+}
+
+/* ============ BUILD STATIONS ============ */
+const container = document.getElementById('stationsContainer');
+const completed = new Set();
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+stations.forEach((station, sIdx)=>{
+  const stageDiv = document.createElement('div');
+  stageDiv.className = 'stage';
+  stageDiv.id = 'stage-station-'+sIdx;
+
+  const termsOrder = shuffle(station.pairs.map((p,i)=>i));
+  const defsOrder = shuffle(station.pairs.map((p,i)=>i));
+
+  stageDiv.innerHTML = `
+    <div class="eyebrow">${station.icon} STATION ${sIdx+1} OF ${stations.length}</div>
+    <h2>${station.title}</h2>
+    <p class="lead">${station.lead}</p>
+    <div class="board">
+      <div class="col-title">TERMS</div><div class="col-title">MEANINGS</div>
+      ${termsOrder.map((ti, row)=>`
+        <div class="chip term" data-role="term" data-idx="${ti}">${station.pairs[ti].term}</div>
+        <div class="chip def" data-role="def" data-idx="${defsOrder[row]}">${station.pairs[defsOrder[row]].def}</div>
+      `).join('')}
+    </div>
+  `;
+
+  const speakBox = document.createElement('div');
+  speakBox.className = 'speak-box';
+  speakBox.id = 'speak-'+sIdx;
+  speakBox.innerHTML = `<div class="say-icon">🗣️</div><div class="say-text" id="say-text-${sIdx}"></div><button class="speak-btn" id="speak-btn-${sIdx}" onclick="speak(document.getElementById('say-text-${sIdx}').dataset.raw)">🔊</button>`;
+  stageDiv.appendChild(speakBox);
+
+  const status = document.createElement('div');
+  status.className = 'case-status';
+  status.id = 'status-'+sIdx;
+  status.textContent = `0 / ${station.pairs.length} matched`;
+  stageDiv.appendChild(status);
+
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'next-case-btn';
+  nextBtn.id = 'nextbtn-'+sIdx;
+  nextBtn.textContent = (sIdx === stations.length-1) ? '🏆 See Final Results' : `🔍 Open Case File ${sIdx+2}`;
+  nextBtn.onclick = ()=> goToStation(sIdx+1);
+  stageDiv.appendChild(nextBtn);
+
+  container.appendChild(stageDiv);
+
+  // matching logic
+  let selectedTerm = null, matchedCount = 0;
+  const termChips = stageDiv.querySelectorAll('.chip.term');
+  const defChips = stageDiv.querySelectorAll('.chip.def');
+
+  termChips.forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      if(chip.classList.contains('matched')) return;
+      termChips.forEach(c=>c.classList.remove('selected'));
+      chip.classList.add('selected');
+      selectedTerm = chip;
+    });
+  });
+  defChips.forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      if(chip.classList.contains('matched') || !selectedTerm) return;
+      const termIdx = parseInt(selectedTerm.dataset.idx);
+      const defIdx = parseInt(chip.dataset.idx);
+      if(termIdx === defIdx){
+        selectedTerm.classList.remove('selected');
+        selectedTerm.classList.add('matched');
+        chip.classList.add('matched');
+        matchedCount++;
+        awardStars(1);
+        const pair = station.pairs[termIdx];
+        const sayEl = document.getElementById('say-text-'+sIdx);
+        sayEl.textContent = `"${pair.say}"`;
+        sayEl.dataset.raw = pair.say;
+        speakBox.classList.add('show');
+        document.getElementById('status-'+sIdx).textContent = `${matchedCount} / ${station.pairs.length} matched`;
+        selectedTerm = null;
+        if(matchedCount === station.pairs.length){
+          document.getElementById('status-'+sIdx).textContent = `✅ Case Solved! ${matchedCount}/${station.pairs.length}`;
+          document.getElementById('nextbtn-'+sIdx).classList.add('ready');
+          completed.add(sIdx);
+          updateDots(sIdx, completed);
+          awardStars(2); // bonus for closing the case
+        }
+      } else {
+        chip.classList.add('wrong');
+        selectedTerm.classList.add('wrong');
+        setTimeout(()=>{
+          chip.classList.remove('wrong');
+          selectedTerm && selectedTerm.classList.remove('wrong','selected');
+          selectedTerm = null;
+        }, 450);
+      }
+    });
+  });
+});
+
+/* ============ NAVIGATION ============ */
+let currentStage = -1; // -1 = intro
+function goToStation(idx){
+  document.querySelectorAll('.stage').forEach(s=>s.classList.remove('active'));
+  if(idx >= stations.length){
+    document.getElementById('stage-final').classList.add('active');
+    document.getElementById('finalStars').textContent = `⭐ ${totalStars} stars`;
+    burstConfetti();
+    updateDots(-1, completed);
+    return;
+  }
+  document.getElementById('stage-station-'+idx).classList.add('active');
+  currentStage = idx;
+  updateDots(idx, completed);
+}
+function startGame(){
+  document.getElementById('stage-intro').classList.remove('active');
+  goToStation(0);
+}
+
+/* ============ CONFETTI ============ */
+function burstConfetti(){
+  const layer = document.getElementById('confettiLayer');
+  const emojis = ['🎉','⭐','🏆','✨','🔍'];
+  for(let i=0;i<45;i++){
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    p.style.left = Math.random()*100 + '%';
+    p.style.fontSize = (16+Math.random()*22)+'px';
+    p.style.animationDuration = (2+Math.random()*2)+'s';
+    p.style.animationDelay = (Math.random()*0.7)+'s';
+    layer.appendChild(p);
+    setTimeout(()=>p.remove(), 5000);
+  }
+}
+</script>
+</body>
+</html>
